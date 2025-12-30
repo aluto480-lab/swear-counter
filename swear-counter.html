@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Swear Counter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+      margin-bottom: 30px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #eaeaea;
+    }
+
+    td[contenteditable="true"] {
+      cursor: text;
+      background: #fafafa;
+    }
+
+    tr.total-row {
+      font-weight: bold;
+      background: #f0f8ff;
+    }
+
+    #history {
+      background: white;
+      padding: 15px;
+      border: 1px solid #ccc;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .history-entry {
+      font-size: 14px;
+      border-bottom: 1px solid #eee;
+      padding: 5px 0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🤬 Swear Counter</h1>
+
+<table id="swearTable">
+  <thead>
+    <tr>
+      <th>Entry</th>
+      <th>JL</th>
+      <th>JX</th>
+      <th>WHS</th>
+      <th>OYSC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Swears</td>
+      <td contenteditable="true">0</td>
+      <td contenteditable="true">0</td>
+      <td contenteditable="true">0</td>
+      <td contenteditable="true">0</td>
+    </tr>
+    <tr class="total-row">
+      <td>Total</td>
+      <td id="total-jl">0</td>
+      <td id="total-jx">0</td>
+      <td id="total-whs">0</td>
+      <td id="total-oysc">0</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>📜 Version History</h2>
+<div id="history"></div>
+
+<script>
+  const table = document.getElementById("swearTable");
+  const historyDiv = document.getElementById("history");
+
+  const names = ["JL", "JX", "WHS", "OYSC"];
+
+  function updateTotals() {
+    const row = table.rows[1];
+    names.forEach((name, i) => {
+      const value = parseInt(row.cells[i + 1].innerText) || 0;
+      document.getElementById("total-" + name.toLowerCase()).innerText = value;
+    });
+  }
+
+  function logHistory(name, oldVal, newVal) {
+    const time = new Date().toLocaleString();
+    const entry = document.createElement("div");
+    entry.className = "history-entry";
+    entry.innerText = `[${time}] ${name}: ${oldVal} → ${newVal}`;
+    historyDiv.prepend(entry);
+
+    saveHistory();
+  }
+
+  function saveData() {
+    const row = table.rows[1];
+    const data = {};
+    names.forEach((name, i) => {
+      data[name] = row.cells[i + 1].innerText;
+    });
+    localStorage.setItem("swearData", JSON.stringify(data));
+  }
+
+  function saveHistory() {
+    localStorage.setItem("swearHistory", historyDiv.innerHTML);
+  }
+
+  function loadData() {
+    const data = JSON.parse(localStorage.getItem("swearData"));
+    if (data) {
+      const row = table.rows[1];
+      names.forEach((name, i) => {
+        row.cells[i + 1].innerText = data[name] || 0;
+      });
+    }
+
+    const history = localStorage.getItem("swearHistory");
+    if (history) historyDiv.innerHTML = history;
+
+    updateTotals();
+  }
+
+  table.addEventListener("focusin", (e) => {
+    if (e.target.contentEditable === "true") {
+      e.target.dataset.oldValue = e.target.innerText;
+    }
+  });
+
+  table.addEventListener("focusout", (e) => {
+    if (e.target.contentEditable === "true") {
+      const oldVal = e.target.dataset.oldValue || "0";
+      const newVal = e.target.innerText.trim() || "0";
+      e.target.innerText = parseInt(newVal) || 0;
+
+      if (oldVal !== e.target.innerText) {
+        const colIndex = e.target.cellIndex - 1;
+        logHistory(names[colIndex], oldVal, e.target.innerText);
+        saveData();
+        updateTotals();
+      }
+    }
+  });
+
+  loadData();
+</script>
+
+</body>
+</html>
